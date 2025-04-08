@@ -1,3 +1,5 @@
+#clausificacion.py
+
 from logica import *
 
 def eliminar_implicaciones(formula):
