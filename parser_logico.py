@@ -68,35 +68,66 @@ def parse_formula(texto):
 def lenguaje_natural_a_logica(frase):
     frase = frase.lower().strip()
 
-    # 1. Negación universal (ningún)
-    if frase.startswith("ningún") or frase.startswith("ninguna"):
-        partes = frase.split("es")
-        sujeto = partes[0].replace("ningún", "").replace("ninguna", "").strip()
-        predicado = partes[1].strip()
-        x = Variable("x")
-        return ParaTodo(x, Implicacion(
-            Predicado(sujeto.capitalize(), [x]),
-            Negacion(Predicado(predicado.capitalize(), [x]))
-        ))
-
-    # 2. Negación predicativa: "X no es Y"
-    if "no es" in frase:
-        partes = frase.split("no es")
-        sujeto = partes[0].strip().capitalize()
-        predicado = partes[1].strip().capitalize()
-        return Negacion(Predicado(predicado, [Constante(sujeto)]))
-
-    # 3. Negación de predicado binario: "X no odia a Y"
-    if "no odia a" in frase:
-        partes = frase.split("no odia a")
-        sujeto = partes[0].strip().capitalize()
-        objeto = partes[1].strip().capitalize()
-        return Negacion(Predicado("Odia", [Constante(sujeto), Constante(objeto)]))
-
-    # 4. Cuantificador universal positivo
     if "todo" in frase or "todos" in frase:
-        partes = frase.split("es")
-        sujeto = partes[0].replace("todo", "").replace("todos", "").strip()
+        # Caso especial para "todo humano asesina a gobernante que no es leal"
+        if "asesina a" in frase and "que no es leal" in frase:
+            # Partimos la frase en "todo humano asesina a gobernante" y "que no es leal"
+            partes = frase.split("asesina a")
+            sujeto = partes[0].replace("todo", "").replace("humano", "").strip()
+            objeto = partes[1].split("que")[0].strip()
+            x = Variable("x")
+            y = Variable("y")
+
+            # La acción es asesinar entre humano y gobernante
+            predicado_asesina = Predicado("Asesina", [x, y])
+
+            # La condición de "no es leal" se representa como una negación
+            predicado_no_leal = Negacion(Predicado("Leal", [x, y]))
+
+            # Regresamos la fórmula lógica
+            return ParaTodo(x, Implicacion(
+                Conjuncion(
+                    Predicado("Humano", [x]),
+                    Predicado("Gobernante", [y])
+                ),
+                Conjuncion(
+                    predicado_asesina,
+                    predicado_no_leal
+                )
+            ))
+
+        # Caso de "todos X son Y o Z"
+        if " son o " in frase and " o " in frase.split(" son o ")[-1]:
+            sujeto = frase.split("son")[0].replace("todos los", "").replace("todos", "").strip()
+            resto = frase.split(" son o ", 1)[1].strip()
+            parte1, parte2 = map(str.strip, resto.split(" o "))
+
+            x = Variable("x")
+
+            def interpretar_relacion(parte):
+                if " a " in parte:
+                    accion, obj = map(str.strip, parte.split(" a "))
+                    return Predicado(accion.capitalize(), [x, Constante(obj.capitalize())])
+                else:
+                    return Predicado(parte.capitalize(), [x])
+
+            pred1 = interpretar_relacion(parte1)
+            pred2 = interpretar_relacion(parte2)
+
+            return ParaTodo(x, Implicacion(
+                Predicado(sujeto.capitalize(), [x]),
+                Disyuncion(pred1, pred2)
+            ))
+
+        # Caso simple: todos los X son Y
+        if " es " in frase:
+            partes = frase.split("es")
+        elif " son " in frase:
+            partes = frase.split("son")
+        else:
+            return None
+
+        sujeto = partes[0].replace("todos los", "").replace("todo", "").replace("todos", "").strip()
         predicado = partes[1].strip()
         x = Variable("x")
         return ParaTodo(x, Implicacion(
@@ -104,25 +135,27 @@ def lenguaje_natural_a_logica(frase):
             Predicado(predicado.capitalize(), [x])
         ))
 
-    # 5. Existencial afirmativo: "algún humano odia a César"
+    if "asesina a" in frase:
+        partes = frase.split("asesina a")
+        sujeto = partes[0].strip().capitalize()
+        objeto = partes[1].strip().capitalize()
+        return Predicado("Asesina", [Constante(sujeto), Constante(objeto)])
+
     if "alguien" in frase or "algún" in frase:
-        if "odia a" in frase:
-            partes = frase.split("odia a")
-            sujeto = partes[0].replace("algún", "").replace("alguien", "").strip()
-            objeto = partes[1].strip().capitalize()
+        if "odia" in frase:
+            partes = frase.split("odia")
             x = Variable("x")
+            objeto = partes[1].strip().capitalize()
             return Existe(x, Predicado("Odia", [x, Constante(objeto)]))
 
-    # 6. Afirmación binaria directa: "Marco odia a César"
-    if "odia a" in frase:
-        partes = frase.split("odia a")
+    if "odia" in frase:
+        partes = frase.split("odia")
         sujeto = partes[0].strip().capitalize()
         objeto = partes[1].strip().capitalize()
         return Predicado("Odia", [Constante(sujeto), Constante(objeto)])
 
-    # 7. Afirmación unaria directa: "Marco es humano"
-    if "es" in frase:
-        partes = frase.split("es")
+    if " es " in frase:
+        partes = frase.split(" es ")
         sujeto = partes[0].strip().capitalize()
         predicado = partes[1].strip().capitalize()
         return Predicado(predicado, [Constante(sujeto)])

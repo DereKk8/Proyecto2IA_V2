@@ -1,17 +1,22 @@
-# pruebas_logica.py
+from clausificacion import convertir_a_clausulas
+from parser_logico import lenguaje_natural_a_logica
 
-from logica import *
-from parser_logico import *
+frases = [
+    "marco es humano",
+    "marco es pompeyano",
+    "todo pompeyano es humano",
+    "cesar es gorbenante",
+    "todos pompeyano son o leal a cesar o odia a cesar",
+    "todo humano asesina a gobernante a que no es leal",
+    "marco asesina a cesar"
+    
+]
 
-def ejemplo_marco():
-    frases = [
-        "Marco es feo",
-        "Todo humano es mortal",
-        "Marco odia a Cesar"
-    ]
-    print("=== Traducción del ejemplo ===")
-    for frase in frases:
-        f = lenguaje_natural_a_logica(frase)
-        print(f"'{frase}' → {f}")
-
-ejemplo_marco()
+for frase in frases:
+    formula = lenguaje_natural_a_logica(frase)
+    print("Frase:", frase)
+    print("Fórmula lógica:", formula)
+    clausulas = convertir_a_clausulas(formula)
+    for c in clausulas:
+        print("Cláusula:", c)
+    print("---")
