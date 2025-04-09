@@ -7,13 +7,22 @@ class BaseConocimiento:
         self.contador_vars = 0
 
     def agregar_clausula(self, clausula):
+        if not isinstance(clausula, Clausula):
+            raise TypeError(f"Se esperaba una Clausula, se recibió {type(clausula)}")
         self.clausulas.add(clausula)
+        print(f"Agregada cláusula: {clausula}")
 
     def agregar_formula(self, formula):
+        print(f"\nAgregando fórmula a la base de conocimiento: {formula}")
         nuevas_clausulas = convertir_a_clausulas(formula)
+        print(f"Cláusulas generadas: {len(nuevas_clausulas)}")
         for literales in nuevas_clausulas:
-            clausula = Clausula([Literal(lit[1], lit[0] == "¬") for lit in literales])
-            self.clausulas.add(clausula)
+            try:
+                clausula = Clausula([Literal(lit[1], lit[0] == "¬") for lit in literales])
+                self.clausulas.add(clausula)
+                print(f"  Agregada: {clausula}")
+            except Exception as e:
+                print(f"  [ERROR] No se pudo crear cláusula de {literales}: {str(e)}")
 
 class MotorInferencia:
     def __init__(self):
@@ -36,6 +45,10 @@ class MotorInferencia:
         """Unifica dos términos y retorna la sustitución más general si existe"""
         if sustitucion is None:
             sustitucion = {}
+        
+        # Si los términos son exactamente iguales
+        if str(termino1) == str(termino2):
+            return sustitucion
 
         if isinstance(termino1, Variable):
             if termino1.nombre in sustitucion:
@@ -43,7 +56,7 @@ class MotorInferencia:
             elif isinstance(termino2, Variable) and termino2.nombre in sustitucion:
                 return self.unificar(termino1, sustitucion[termino2.nombre], sustitucion)
             elif self.ocurre_en(termino1, termino2):
-                return None  # Falla la unificación por occur-check
+                return None
             else:
                 sustitucion[termino1.nombre] = termino2
                 return sustitucion
@@ -51,16 +64,18 @@ class MotorInferencia:
         elif isinstance(termino2, Variable):
             return self.unificar(termino2, termino1, sustitucion)
         
-        elif isinstance(termino1, Funcion) and isinstance(termino2, Funcion):
-            if termino1.nombre != termino2.nombre or len(termino1.argumentos) != len(termino2.argumentos):
+        # Si son predicados
+        elif isinstance(termino1, Predicado) and isinstance(termino2, Predicado):
+            if termino1.nombre != termino2.nombre:
                 return None
+            if len(termino1.argumentos) != len(termino2.argumentos):
+                return None
+            
+            # Unificar argumentos
             for arg1, arg2 in zip(termino1.argumentos, termino2.argumentos):
                 sustitucion = self.unificar(arg1, arg2, sustitucion)
                 if sustitucion is None:
                     return None
-            return sustitucion
-        
-        elif termino1 == termino2:
             return sustitucion
         
         return None
@@ -101,6 +116,9 @@ class MotorInferencia:
 
     def probar_por_refutacion(self, consulta, max_iteraciones=1000):
         """Intenta probar una consulta por refutación"""
+        print("\nIniciando prueba por refutación")
+        print(f"Base de conocimiento: {len(self.base_conocimiento.clausulas)} cláusulas")
+        
         # Negar la consulta y agregarla a la base de conocimiento
         clausulas_negadas = self.negar_consulta(consulta)
         clausulas_trabajo = self.base_conocimiento.clausulas.copy()
@@ -108,6 +126,20 @@ class MotorInferencia:
         for literales in clausulas_negadas:
             clausula = Clausula([Literal(lit[1], lit[0] == "¬") for lit in literales])
             clausulas_trabajo.add(clausula)
+            print(f"Agregada negación: {clausula}")
+
+        # Verificación directa para hechos simples
+        if isinstance(consulta, Predicado):
+            consulta_literal = Literal(consulta, False)
+            for clausula in self.base_conocimiento.clausulas:
+                if len(clausula.literales) == 1:
+                    literal_base = clausula.literales[0]
+                    if (literal_base.predicado.nombre == consulta_literal.predicado.nombre and
+                        len(literal_base.predicado.argumentos) == len(consulta_literal.predicado.argumentos)):
+                        sustitucion = self.unificar(literal_base.predicado, consulta_literal.predicado)
+                        if sustitucion is not None:
+                            print(f"Coincidencia directa encontrada")
+                            return True
 
         clausulas_nuevas = set()
         iteracion = 0
@@ -115,26 +147,21 @@ class MotorInferencia:
         while iteracion < max_iteraciones:
             iteracion += 1
             
-            # Seleccionar pares de cláusulas para resolución
             for c1 in clausulas_trabajo:
                 for c2 in clausulas_trabajo:
                     if c1 != c2:
                         resolventes = self.resolver_clausulas(c1, c2)
                         for resolvente in resolventes:
                             if len(resolvente.literales) == 0:
-                                # Se encontró la cláusula vacía
+                                print("Se encontró la cláusula vacía")
                                 return True
                             if resolvente not in clausulas_trabajo and resolvente not in clausulas_nuevas:
                                 clausulas_nuevas.add(resolvente)
 
-            # Si no hay nuevas cláusulas, no se puede probar
             if not clausulas_nuevas:
-                print("no hay clausulas")
                 return False
 
-            # Agregar nuevas cláusulas al conjunto de trabajo
             clausulas_trabajo.update(clausulas_nuevas)
             clausulas_nuevas = set()
 
-        # Si se alcanza el límite de iteraciones
-        return None  # None indica que no se pudo determinar
+        return None
