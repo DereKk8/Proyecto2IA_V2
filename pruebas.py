@@ -1,21 +1,99 @@
-from clausificacion import convertir_a_clausulas
+from clausificacion import convertir_a_clausulas, eliminar_implicaciones, mover_negaciones, estandarizar_variables, skolemizar, eliminar_cuantificadores_universales, distribuir_or
 from parser_logico import lenguaje_natural_a_logica
 from motor_inferencia import MotorInferencia
-from logica import Predicado, Variable, Disyuncion
+from logica import Predicado, Variable, Disyuncion, Negacion
 
-def imprimir_base_conocimiento(motor):
-    print("\nBase de Conocimiento:")
-    if not motor.base_conocimiento.clausulas:
-        print("  [ADVERTENCIA] La base de conocimiento está vacía!")
+def mostrar_pasos_clausificacion(formula, descripcion=""):
+    print(f"\n=== Pasos de Clausificación {descripcion} ===")
+    print("1. Fórmula original:")
+    print(f"   {formula}")
+    
+    print("\n2. Eliminar implicaciones:")
+    formula = eliminar_implicaciones(formula)
+    print(f"   {formula}")
+    
+    print("\n3. Mover negaciones hacia adentro:")
+    formula = mover_negaciones(formula)
+    print(f"   {formula}")
+    
+    print("\n4. Estandarizar variables:")
+    formula = estandarizar_variables(formula)
+    print(f"   {formula}")
+    
+    print("\n5. Skolemización:")
+    formula = skolemizar(formula)
+    print(f"   {formula}")
+    
+    print("\n6. Eliminar cuantificadores universales:")
+    formula = eliminar_cuantificadores_universales(formula)
+    print(f"   {formula}")
+    
+    print("\n7. Distribución de OR sobre AND:")
+    formula = distribuir_or(formula)
+    print(f"   {formula}")
+    
+    print("\n8. Forma clausal final:")
+    clausulas = convertir_a_clausulas(formula)
+    for i, c in enumerate(clausulas, 1):
+        print(f"   Cláusula {i}: {c}")
+    
+    return clausulas
+
+def realizar_consulta_detallada(motor, descripcion, consulta, frase_natural=None):
+    print("\n" + "="*80)
+    print(f"CONSULTA: {descripcion}")
+    print("="*80)
+    
+    # Paso 1: Mostrar la base de conocimiento y su proceso de clausificación
+    print("\nPASO 1: Base de Conocimiento")
+    print("Frases en la base de conocimiento:")
+    for i, frase in enumerate(frases, 1):
+        print(f"\n--- Procesando frase {i}: '{frase}' ---")
+        formula = lenguaje_natural_a_logica(frase)
+        print("Fórmula lógica:", formula)
+        clausulas = mostrar_pasos_clausificacion(formula, f"de frase {i}")
+    
+    # Paso 2: Transformación y clausificación de la consulta
+    print("\nPASO 2: Procesamiento de la Consulta")
+    if frase_natural:
+        print(f"Frase de consulta: '{frase_natural}'")
+        formula_consulta = lenguaje_natural_a_logica(frase_natural)
+        print(f"Fórmula lógica de la consulta: {formula_consulta}")
     else:
-        for clausula in motor.base_conocimiento.clausulas:
-            print(f"  {clausula}")
-    print(f"Total de cláusulas: {len(motor.base_conocimiento.clausulas)}")
+        formula_consulta = consulta
+        print(f"Fórmula lógica de la consulta: {consulta}")
+    
+    print("\nClausificación de la negación de la consulta:")
+    negacion = Negacion(formula_consulta)
+    clausulas_negadas = mostrar_pasos_clausificacion(negacion, "de la negación de la consulta")
+    
+    # Paso 3: Resolución por Refutación
+    print("\nPASO 3: Resolución por Refutación")
+    print("Estado actual de la base de conocimiento:")
+    for i, c in enumerate(motor.base_conocimiento.clausulas, 1):
+        print(f"  {i}. {c}")
+    
+    print("\nAgregando la negación de la consulta:")
+    for c in clausulas_negadas:
+        print(f"  + {c}")
+    
+    # Realizar la prueba
+    resultado = motor.probar_por_refutacion(consulta)
+    
+    # Mostrar resultado final
+    print("\nRESULTADO FINAL:")
+    if resultado is True:
+        print("✓ VERDADERO - La consulta se puede probar")
+    elif resultado is False:
+        print("✗ FALSO - La consulta no se puede probar")
+    else:
+        print("? INDETERMINADO - No se pudo determinar la verdad de la consulta")
+    print("="*80)
 
 # Crear el motor de inferencia
 motor = MotorInferencia()
 
-# Lista de frases que forman nuestra base de conocimiento
+# Lista de frases para la base de conocimiento
 frases = [
     "marco es humano",
     "marco es pompeyano",
@@ -26,85 +104,27 @@ frases = [
     "marco asesina a cesar"
 ]
 
-# Primero, mostrar la conversión de cada frase a fórmula lógica y cláusulas
-print("=== Conversión de frases a fórmulas y cláusulas ===")
-for i, frase in enumerate(frases, 1):
-    print(f"\nProcesando frase {i}: '{frase}'")
-    try:
-        formula = lenguaje_natural_a_logica(frase)
-        print("Fórmula lógica:", formula)
-        
-        clausulas = convertir_a_clausulas(formula)
-        print("Cláusulas generadas:")
-        if not clausulas:
-            print("  [ADVERTENCIA] No se generaron cláusulas!")
-        for j, c in enumerate(clausulas, 1):
-            print(f"  {j}. {c}")
-        
-        # Agregar la fórmula a la base de conocimiento
-        motor.base_conocimiento.agregar_formula(formula)
-        print(f"Estado de la base después de agregar: {len(motor.base_conocimiento.clausulas)} cláusulas totales")
-    except Exception as e:
-        print(f"[ERROR] Error al procesar la frase: {str(e)}")
+# Cargar la base de conocimiento
+print("=== Cargando Base de Conocimiento ===")
+for frase in frases:
+    formula = lenguaje_natural_a_logica(frase)
+    motor.base_conocimiento.agregar_formula(formula)
 
-print("\n=== Base de Conocimiento Final ===")
-imprimir_base_conocimiento(motor)
+# Realizar consultas detalladas
+print("\n=== Iniciando Consultas ===")
 
-# Función mejorada para probar consultas
-def probar_consulta(motor, descripcion, consulta):
-    print(f"\n=== Consulta: {descripcion} ===")
-    print(f"Fórmula de consulta: {consulta}")
-    
-    # Mostrar la negación de la consulta y sus cláusulas
-    clausulas_negadas = motor.negar_consulta(consulta)
-    print("Cláusulas de la negación de la consulta:")
-    for c in clausulas_negadas:
-        print(f"  {c}")
-    
-    # Realizar la prueba
-    resultado = motor.probar_por_refutacion(consulta)
-    
-    # Mostrar resultado
-    print("\nResultado:", end=" ")
-    if resultado is True:
-        print("✓ VERDADERO - La consulta se puede probar")
-    elif resultado is False:
-        print("✗ FALSO - La consulta no se puede probar")
-    else:
-        print("? INDETERMINADO - No se pudo determinar la verdad de la consulta")
-
-print("\n=== Iniciando Pruebas de Inferencia ===")
-
-# Pruebas básicas de hechos directos
-print("\n--- Pruebas de Hechos Directos ---")
-
-# Prueba 1: ¿Es Marco un humano?
-consulta1 = Predicado("Humano", [Variable("marco")])
-probar_consulta(motor, "¿Es Marco un humano?", consulta1)
-
-
-print("\n--- Pruebas de Inferencia Simple ---")
-
-# Prueba 3: ¿Marco asesina a César?
-consulta3 = Predicado("Asesina", [Variable("marco"), Variable("cesar")])
-probar_consulta(motor, "¿Marco asesina a César?", consulta3)
-
-# Prueba 4: ¿Es Marco pompeyano?
-consulta4 = Predicado("Pompeyano", [Variable("marco")])
-probar_consulta(motor, "¿Es Marco pompeyano?", consulta4)
-
-print("\n--- Pruebas de Inferencia Compleja ---")
-
-# Prueba 5: ¿Todo pompeyano es humano?
-x = Variable("x")
-consulta5 = Predicado("Humano", [x])
-probar_consulta(motor, "¿Todo pompeyano es humano?", consulta5)
-
-# Prueba 6: ¿Marco es leal a César o lo odia?
-consulta6 = Disyuncion(
-    Predicado("Leal", [Variable("marco"), Variable("cesar")]),
-    Predicado("Odia", [Variable("marco"), Variable("cesar")])
+# Consulta simple
+realizar_consulta_detallada(
+    motor,
+    "¿Es Marco un humano?",
+    Predicado("Humano", [Variable("marco")]),
+    "marco es humano"
 )
-probar_consulta(motor, "¿Marco es leal a César o lo odia?", consulta6)
 
-print("\n=== Fin de las pruebas ===")
+# Consulta compleja
+realizar_consulta_detallada(
+    motor,
+    "¿Marco asesina a César?",
+    Predicado("Asesina", [Variable("marco"), Variable("cesar")]),
+    "marco asesina a cesar"
+)
