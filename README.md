@@ -254,7 +254,6 @@ ParaTodo(
 class Término
 class Constante
 class Variable
-class Función
 class Predicado
 class Fórmula
 class Negación
@@ -269,7 +268,9 @@ class Cláusula
 
 Término <|-- Constante
 Término <|-- Variable
-Término <|-- Función
+Término <|-- Predicado
+
+Predicado <|-- Funcion
 
 Fórmula <|-- Negación
 Fórmula <|-- Conjunción
