@@ -539,6 +539,70 @@ class BaseConocimiento:
             self.clausulas.add(clausula)
 ```
 
+## Inferencia por Refutación
+
+### 1. Negación de la Consulta
+El proceso de refutación comienza negando la consulta original. Esto se realiza mediante:
+- Aplicación del operador de negación a la fórmula de consulta
+- Conversión de la fórmula negada a forma clausal
+- Adición de las cláusulas resultantes al conjunto de trabajo
+
+#### 1.1 Proceso de Negación
+```python
+def negar_consulta(self, consulta):
+    """Niega la consulta y la convierte a forma clausal"""
+    negacion = Negacion(consulta)
+    return convertir_a_clausulas(negacion)
+```
+
+#### 1.2 Preparación para Refutación
+```python
+def probar_por_refutacion(self, consulta, max_iteraciones=1000):
+    # Obtener cláusulas de la consulta negada
+    clausulas_negadas = self.negar_consulta(consulta)
+    clausulas_trabajo = self.base_conocimiento.clausulas.copy()
+    
+    # Agregar cláusulas negadas al conjunto de trabajo
+    for literales in clausulas_negadas:
+        clausula = Clausula([
+            Literal(lit[1], lit[0] == "¬") 
+            for lit in literales
+        ])
+        clausulas_trabajo.add(clausula)
+        print(f"Agregada negación: {clausula}")
+```
+
+### 2. Proceso de Resolución
+
+#### 2.1 Unificación
+El algoritmo de unificación es fundamental para el proceso de resolución:
+- Busca sustituciones que hagan iguales dos términos
+- Maneja variables, constantes y funciones
+- Verifica la ocurrencia de variables para evitar ciclos
+- Aplica las sustituciones de manera recursiva
+
+#### 2.2 Resolución de Cláusulas
+La resolución opera sobre pares de cláusulas:
+- Identifica literales complementarios (uno negado y otro no)
+- Intenta unificar los predicados de estos literales
+- Genera nuevas cláusulas (resolventes) eliminando los literales unificados
+- Aplica las sustituciones encontradas a los literales restantes
+
+#### 2.3 Estrategia de Búsqueda
+El proceso de búsqueda de la refutación:
+- Mantiene un conjunto de trabajo con las cláusulas disponibles
+- Aplica resolución a todos los pares posibles de cláusulas
+- Agrega las resolventes nuevas al conjunto de trabajo
+- Continúa hasta encontrar la cláusula vacía o agotar las posibilidades
+
+### 3. Criterios de Terminación
+
+El proceso termina cuando:
+1. **Éxito**: Se deriva la cláusula vacía
+2. **Fallo**: No se pueden generar nuevas cláusulas
+3. **Indeterminado**: Se alcanza el límite de iteraciones (1000)
+
+
 
 
 
