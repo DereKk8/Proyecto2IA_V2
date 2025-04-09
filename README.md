@@ -437,5 +437,109 @@ def procesar_regla_compleja(frase):
 - `"X verbo a Y"` → Predicados de acción
 - `"todos X son o Y o Z"` → Disyunciones universales
 
+## Proceso de Clausificación
+
+### Objetivo y Utilidad
+La clausificación es un proceso fundamental que transforma fórmulas de lógica de primer orden en un conjunto de cláusulas en forma normal conjuntiva (FNC). Este proceso es esencial porque:
+- Estandariza todas las fórmulas en un formato uniforme
+- Facilita el proceso de resolución
+- Permite aplicar el algoritmo de unificación
+- Hace posible la refutación automática
+
+### Pasos del Proceso de Clausificación
+
+1. **Eliminación de Implicaciones**
+   - Transforma A → B en ¬A ∨ B
+```python
+def eliminar_implicaciones(formula):
+    if isinstance(formula, Implicacion):
+        return Disyuncion(
+            Negacion(eliminar_implicaciones(formula.antecedente)),
+            eliminar_implicaciones(formula.consecuente)
+        )
+```
+
+2. **Movimiento de Negaciones**
+   - Aplica las leyes de De Morgan
+   - Mueve las negaciones hacia los predicados
+```python
+def mover_negaciones(formula):
+    if isinstance(formula, Negacion):
+        sub = formula.operando
+        if isinstance(sub, Conjuncion):  # ¬(A ∧ B) = ¬A ∨ ¬B
+            return Disyuncion(
+                mover_negaciones(Negacion(sub.izquierda)), 
+                mover_negaciones(Negacion(sub.derecha))
+            )
+        elif isinstance(sub, ParaTodo):  # ¬∀x P = ∃x ¬P
+            return Existe(sub.variable, mover_negaciones(Negacion(sub.formula)))
+```
+
+3. **Estandarización de Variables**
+   - Renombra variables para evitar conflictos
+```python
+def estandarizar_variables(formula, mapping=None, contador=None):
+    if isinstance(formula, ParaTodo):
+        var_original = formula.variable.nombre
+        nuevo_nombre = f"{var_original}_{contador[0]}"
+        contador[0] += 1
+        mapping[var_original] = nuevo_nombre
+        nueva_var = Variable(nuevo_nombre)
+```
+
+4. **Skolemización**
+   - Elimina cuantificadores existenciales
+   - Introduce funciones de Skolem
+```python
+def skolemizar(formula, vars_universales=None, contador=None):
+    if isinstance(formula, Existe):
+        if vars_universales:
+            nombre_funcion = f"f{contador[0]}"
+            argumentos = [Variable(v) for v in vars_universales]
+            skolem_term = Funcion(nombre_funcion, argumentos)
+        else:
+            skolem_term = Constante(f"c{contador[0]}")
+```
+
+5. **Eliminación de Cuantificadores Universales**
+```python
+def eliminar_cuantificadores_universales(formula):
+    if isinstance(formula, ParaTodo):
+        return eliminar_cuantificadores_universales(formula.formula)
+```
+
+6. **Distribución de Disyunciones sobre Conjunciones**
+```python
+def distribuir_or(formula):
+    if isinstance(formula, Disyuncion):
+        if isinstance(formula.izquierda, Conjuncion):
+            return Conjuncion(
+                distribuir_or(Disyuncion(formula.izquierda.izquierda, formula.derecha)),
+                distribuir_or(Disyuncion(formula.izquierda.derecha, formula.derecha))
+            )
+```
+
+### Agregación a la Base de Conocimiento
+
+La base de conocimiento mantiene las cláusulas y gestiona su agregación:
+
+```python
+class BaseConocimiento:
+    def __init__(self):
+        self.clausulas = set()
+
+    def agregar_formula(self, formula):
+        print(f"\nAgregando fórmula: {formula}")
+        nuevas_clausulas = convertir_a_clausulas(formula)
+        for literales in nuevas_clausulas:
+            clausula = Clausula([
+                Literal(lit[1], lit[0] == "¬") 
+                for lit in literales
+            ])
+            self.clausulas.add(clausula)
+```
+
+
+
 
 
