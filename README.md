@@ -6,12 +6,12 @@
 Base de conocimiento:
 
 ```shell-session
-"marco es humano"
-"marco es pompeyano"
-"todo pompeyano es humano"
-"cesar es gobernante"
-"todos pompeyano son o leal a cesar o odia a cesar"
-"todo humano asesina a gobernante a que no es leal"
+"marco es humano",
+"marco es pompeyano",
+"todo pompeyano es humano",
+"cesar es gobernante",
+"todos pompeyano son o leal a cesar o odia a cesar",
+"todo humano asesina a gobernante a que no es leal",
 "marco asesina a cesar"
 ```
 
@@ -30,8 +30,8 @@ Esta consulta requiere inferir si, dado que Marco es pompeyano y asesina a Césa
 Base de conocimiento:
 
 ```shell-session
-"juan es padre de maria"
-"maria es madre de pedro"
+"juan es padre de maria",
+"maria es madre de pedro",
 "todo padre es abuelo de los hijos de sus hijos"
 ```
 
