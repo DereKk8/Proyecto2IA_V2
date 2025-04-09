@@ -284,3 +284,158 @@ Literal --> Cláusula
 
 @enduml
 ```
+
+Puedes visualizar este diagrama en [PlantText](https://www.planttext.com/)
+
+## Parser Lógico
+
+### Estructura y Funcionamiento
+
+El parser lógico está diseñado para transformar dos tipos de entrada:
+1. Fórmulas en notación lógica formal
+2. Frases en lenguaje natural restringido
+
+#### Parser de Fórmulas Formales
+
+Procesa expresiones lógicas con la siguiente sintaxis:
+- Predicados: `Predicado(arg1, arg2, ...)`
+- Negación: `¬` o `~`
+- Conectivos: `∧` (and), `∨` (or), `→` (implica)
+- Cuantificadores: `∀` (para todo), `∃` (existe)
+
+Ejemplo:
+```python
+# Salida: "∀x.(Humano(x) → Mortal(x))"
+ParaTodo(
+    Variable("x"),
+    Implicacion(
+        Predicado("Humano", [Variable("x")]),
+        Predicado("Mortal", [Variable("x")])
+    )
+)
+```
+
+#### Parser de Lenguaje Natural
+
+Maneja varios patrones de frases:
+
+1. **Relaciones Binarias**:
+```python
+# "Juan es padre de María"
+Predicado("Padre", [Constante("Juan"), Constante("Maria")])
+```
+
+2. **Reglas Universales**:
+```python
+# "Todo humano es mortal"
+ParaTodo(
+    Variable("x"),
+    Implicacion(
+        Predicado("Humano", [Variable("x")]),
+        Predicado("Mortal", [Variable("x")])
+    )
+)
+```
+
+3. **Disyunciones**:
+```python
+# "Todos pompeyano son o leal a cesar o odia a cesar"
+ParaTodo(
+    Variable("x"),
+    Implicacion(
+        Predicado("Pompeyano", [Variable("x")]),
+        Disyuncion(
+            Predicado("Leal", [Variable("x"), Constante("Cesar")]),
+            Predicado("Odia", [Variable("x"), Constante("Cesar")])
+        )
+    )
+)
+```
+
+### Proceso de Parsing
+
+1. **Tokenización**: Divide la entrada en componentes significativos
+```python
+# Ejemplo: "juan es padre de maria"
+frase = frase.lower().strip()
+if " es " in frase and " de " in frase:
+    antes_es = frase.split(" es ")[0].strip()      # "juan"
+    entre_es_y_de = frase.split(" es ")[1].split(" de ")[0].strip()  # "padre"
+    despues_de = frase.split(" de ")[1].strip()    # "maria"
+```
+
+2. **Identificación de Patrones**: Detecta estructuras sintácticas conocidas
+```python
+# Identifica diferentes patrones en el texto
+if " es " in frase and " de " in frase:
+    # Patrón de relación binaria: "X es Y de Z"
+    tipo = "relacion_binaria"
+elif "todo" in frase and " es " in frase:
+    # Patrón de regla universal: "todo X es Y"
+    tipo = "regla_universal"
+elif "asesina a" in frase:
+    # Patrón de acción: "X asesina a Y"
+    tipo = "predicado_accion"
+```
+
+3. **Construcción del AST**: Genera el predicado
+```python
+# Para una relación binaria: "juan es padre de maria"
+def construir_ast_relacion_binaria(antes_es, relacion, despues_de):
+    return Predicado(
+        relacion.capitalize(),  # Nodo raíz: predicado "Padre"
+        [
+            Constante(antes_es.capitalize()),    # Hijo izquierdo: "Juan"
+            Constante(despues_de.capitalize())   # Hijo derecho: "Maria"
+        ]
+    )
+
+```
+
+### Ejemplo Completo de Transformación
+
+```python
+# Entrada: "todo humano asesina a gobernante que no es leal"
+def procesar_regla_compleja(frase):
+    # 1. Tokenización
+    partes = frase.split("asesina a")
+    sujeto = partes[0].replace("todo", "").strip()
+    objeto = partes[1].split("que")[0].strip()
+    
+    # 2. Identificación del patrón
+    # Detecta patrón de regla condicional con negación
+    
+    # 3. Construcción del AST
+    x = Variable("x")
+    y = Variable("y")
+    
+    # 4. Transformación a fórmula lógica
+    return ParaTodo(x, ParaTodo(y, 
+        Implicacion(
+            Conjuncion(
+                Predicado(sujeto.capitalize(), [x]),
+                Conjuncion(
+                    Predicado(objeto.capitalize(), [y]),
+                    Negacion(Predicado("Leal", [x, y]))
+                )
+            ),
+            Predicado("Asesina", [x, y])
+        )
+    ))
+
+# Resultado:
+# ∀x.∀y.(Humano(x) ∧ (Gobernante(y) ∧ ¬Leal(x,y)) → Asesina(x,y))
+```
+
+¿Te gustaría que expanda algún ejemplo específico o que muestre más casos de transformación?
+
+### Patrones Principales de Lenguaje Natural
+
+- `"X es Y"` → Predicados unarios
+- `"X es Y de Z"` → Relaciones binarias
+- `"todo X es Y"` → Cuantificación universal
+- `"X verbo a Y"` → Predicados de acción
+- `"todos X son o Y o Z"` → Disyunciones universales
+
+
+
