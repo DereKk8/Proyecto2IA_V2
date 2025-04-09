@@ -18,11 +18,11 @@ Base de conocimiento:
 Consulta de ejemplo:
 - "¿Marco odia a César?"
 ```python
-realizar_consulta_detallada(
-    motor,
-    "¿Marco odia a César?",
+consulta = Disyuncion(
+    Predicado("Leal", [Variable("marco"), Variable("cesar")]),
     Predicado("Odia", [Variable("marco"), Variable("cesar")])
 )
+realizar_consulta_detallada(motor, "¿Marco es leal a César o lo odia?", consulta)
 ```
 Esta consulta requiere inferir si, dado que Marco es pompeyano y asesina a César, se puede deducir que lo odia.
 
@@ -427,8 +427,6 @@ def procesar_regla_compleja(frase):
 # Resultado:
 # ∀x.∀y.(Humano(x) ∧ (Gobernante(y) ∧ ¬Leal(x,y)) → Asesina(x,y))
 ```
-
-¿Te gustaría que expanda algún ejemplo específico o que muestre más casos de transformación?
 
 ### Patrones Principales de Lenguaje Natural
 
