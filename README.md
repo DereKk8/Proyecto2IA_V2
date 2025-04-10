@@ -22,7 +22,10 @@ consulta = Disyuncion(
     Predicado("Leal", [Variable("marco"), Variable("cesar")]),
     Predicado("Odia", [Variable("marco"), Variable("cesar")])
 )
-realizar_consulta_detallada(motor, "¿Marco es leal a César o lo odia?", consulta)
+
+pregunta = "¿Marco odia a cesar?";
+realizar_consulta_detallada(motor, "¿Marco odia a cesar?", consulta)
+print(pregunta)
 ```
 Esta consulta requiere inferir si, dado que Marco es pompeyano y asesina a César, se puede deducir que lo odia.
 
