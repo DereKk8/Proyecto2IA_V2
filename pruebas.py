@@ -95,10 +95,13 @@ motor = MotorInferencia()
 
 # Lista de frases para la base de conocimiento
 frases = [
-    "juan es padre de maria",
-    "maria es madre de pedro",
-    "todo padre es abuelo de los hijos de sus hijos",
-
+    "marco es humano",
+    "marco es pompeyano",
+    "todo pompeyano es humano",
+    "cesar es gobernante",
+    "todos pompeyano son o leal a cesar o odia a cesar",
+    "todo humano asesina a gobernante que no es leal",
+    "marco asesina a cesar"
 ]
 
 # Cargar la base de conocimiento
@@ -110,24 +113,13 @@ for frase in frases:
 # Realizar consultas detalladas
 print("\n=== Iniciando Consultas ===")
 
-# Consulta simple
-realizar_consulta_detallada(
-    motor,
-    "¿Es Marco un humano?",
-    Predicado("Humano", [Variable("marco")]),
-    "marco es humano"
+
+consulta = Disyuncion(
+    Predicado("Leal", [Variable("marco"), Variable("cesar")]),
+    Predicado("Odia", [Variable("marco"), Variable("cesar")])
 )
 
-# Consulta compleja
-realizar_consulta_detallada(
-    motor,
-    "¿Marco asesina a César?",
-    Predicado("Asesina", [Variable("marco"), Variable("cesar")]),
-    "marco asesina a cesar"
-)
+pregunta = "¿Marco odia a cesar?";
+realizar_consulta_detallada(motor, "¿Marco odia a cesar?", consulta)
+print(pregunta)
 
-realizar_consulta_detallada(
-    motor,
-    "¿Es Juan abuelo de Pedro?",
-    Predicado("Abuelo", [Variable("juan"), Variable("pedro")])
-)
