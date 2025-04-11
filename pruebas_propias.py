@@ -95,15 +95,14 @@ motor = MotorInferencia()
 
 # Lista de frases para la base de conocimiento
 frases = [
-    "tigre es animal_salvaje",              # tigre es un animal salvaje
-    "todo tigre es depredador",             #los tigres son depredadores
-    "todo depredador es cazador",           #todos los depredadores necesitan cazar para sobrevivir
-    "Selva es habitad de tigre",            #la selva es el habitad natural de los tigres
-    "todo animal es cadena_alimentaria",    #los animales en la selva son parte de una cade alimentaria
-    "todo cazador_no_caza es muerto_hambre",#si una niaml no caza, puede morir de hambre
-    "tigre es cazador_no_caza"              #Tigre no ha cazado en tres dias
+    "marco es humano",
+    "marco es pompeyano",
+    "todo pompeyano es humano",
+    "cesar es gobernante",
+    "todos pompeyano son o leal a cesar o odia a cesar",
+    "todo humano asesina a gobernante a que no es leal",
+    "marco asesina a cesar"
 ]
-
 
 # Cargar la base de conocimiento
 print("=== Cargando Base de Conocimiento ===")
@@ -114,11 +113,12 @@ for frase in frases:
 # Realizar consultas detalladas
 print("\n=== Iniciando Consultas ===")
 
+consulta = Disyuncion(
+    Predicado("Leal", [Variable("marco"), Variable("cesar")]),
+    Predicado("Odia", [Variable("marco"), Variable("cesar")])
+)
 
-consulta = Predicado("Muerto_hambre", [Variable("tigre")])
-
-
-pregunta = "¿El tigre esta en peligro de muerte?";
-realizar_consulta_detallada(motor, pregunta, consulta)
+pregunta = "¿Marco odia a cesar?";
+realizar_consulta_detallada(motor, "¿Marco odia a cesar?", consulta)
 print(pregunta)
 
